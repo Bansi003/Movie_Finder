@@ -14,7 +14,7 @@ def home(request):
         print("API Response:", data)  # Debug purpose
         if data.get('Search'):
             movies = data['Search']
-    return render(request, 'movies/home.html', {'movies': movies, 'query': query})
+    return render(request, 'movies/index.html', {'movies': movies, 'query': query})
 
 def movie_detail(request, imdb_id):
     url = f'http://www.omdbapi.com/?i={imdb_id}&apikey={API_KEY}'

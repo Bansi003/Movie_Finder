@@ -29,7 +29,7 @@
 </head>
 <body>
 
-    {% if movie %}
+    {% if movie %
     <div class="movie-detail">
         <h1>{{ movie.Title }}</h1>
         <img src="{{ movie.Poster|default:'https://via.placeholder.com/300x450?text=No+Image+Available' }}" alt="{{ movie.Title }}">
@@ -48,7 +48,7 @@
         </p>
     </div>
     <div class="back-link">
-        <a href="{% url 'home' %}">← Back to Search</a>
+        <a href="{% url 'index' %}">← Back to Search</a>
     </div>
     {% else %}
         <p style="text-align: center;">{{ error }}</p>
