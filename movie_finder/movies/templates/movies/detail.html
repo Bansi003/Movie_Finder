@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>{{ movie.Title }}</title>
+    <style>
+        body { font-family: Arial; background: #f4f4f4; margin: 0; padding: 0; }
+        .movie-detail { width: 80%; margin: 20px auto; padding: 20px; background: white; box-shadow: 0 4px 8px rgba(0,0,0,0.1); border-radius: 8px; }
+        .movie-detail h1 { text-align: center; }
+        .movie-detail img { display: block; margin: 0 auto; max-width: 300px; }
+        .movie-detail p { font-size: 18px; }
+        a { color: #007BFF; text-decoration: none; }
+        .back-link { text-align: center; margin-top: 30px; }
+        .back-link a {
+            display: inline-block;
+            background-color:rgb(0, 0, 0);
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            text-decoration: none;
+            font-size: 16px;
+            transition: background-color 0.3s ease;
+        }
+        .back-link a:hover {
+            background-color:rgb(114, 121, 130);
+        }
+    </style>
+</head>
+<body>
+
+    {% if movie %}
+    <div class="movie-detail">
+        <h1>{{ movie.Title }}</h1>
+        <img src="{{ movie.Poster|default:'https://via.placeholder.com/300x450?text=No+Image+Available' }}" alt="{{ movie.Title }}">
+        <p><strong>Year:</strong> {{ movie.Year }}</p>
+        <p><strong>Genre:</strong> {{ movie.Genre }}</p>
+        <p><strong>Director:</strong> {{ movie.Director }}</p>
+        <p><strong>Actors:</strong> {{ movie.Actors }}</p>
+        <p><strong>Plot:</strong> {{ movie.Plot }}</p>
+        <p><strong>IMDb Rating:</strong> {{ movie.imdbRating }}</p>
+        <p><strong>IMDb Link:</strong> 
+            {% if movie.imdb_url %}
+                <a href="{{ movie.imdb_url }}" target="_blank">View on IMDb</a>
+            {% else %}
+                <span>IMDb link not available</span>
+            {% endif %}
+        </p>
+    </div>
+    <div class="back-link">
+        <a href="{% url 'home' %}">← Back to Search</a>
+    </div>
+    {% else %}
+        <p style="text-align: center;">{{ error }}</p>
+    {% endif %}
+</body>
+</html>

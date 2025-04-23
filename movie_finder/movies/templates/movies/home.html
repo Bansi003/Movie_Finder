@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Movie Search</title>
+    <link rel="icon" href="/static/image.png" type="image/png">
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #f4f4f4;
+            margin: 0;
+            padding: 0;
+            transition: background 0.4s, color 0.4s;
+        }
+
+        body.dark-mode {
+            background: #121212;
+            color: #f4f4f4;
+        }
+
+        h1 {
+            text-align: center;
+            padding: 20px 0;
+            background: rgb(0, 0, 0);
+            color: white;
+            margin: 0;
+        }
+
+        .theme-toggle {
+            position: absolute;
+            right: 20px;
+            top: 20px;
+            background: white;
+            border: none;
+            border-radius: 20px;
+            padding: 5px 15px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: background 0.3s;
+        }
+
+        .theme-toggle:hover {
+            background: #e0e0e0;
+        }
+
+        form {
+            text-align: center;
+            margin: 20px auto;
+        }
+
+        input[type="text"],
+        select {
+            width: 200px;
+            padding: 10px;
+            margin: 5px;
+            border: 1px solid #ccc;
+            border-radius: 20px;
+            outline: none;
+            transition: box-shadow 0.3s;
+        }
+
+        input[type="text"]:focus,
+        select:focus {
+            box-shadow: 0 0 5px rgba(0,123,255,0.6);
+        }
+
+        button[type="submit"] {
+            padding: 10px 20px;
+            background: hsl(0, 0.00%, 0.00%);
+            color: white;
+            border: none;
+            border-radius: 20px;
+            margin-left: 10px;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+
+        button[type="submit"]:hover {
+            background: rgb(0, 0, 0);
+        }
+
+        .movie-list {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .movie-card {
+            width: 200px;
+            margin: 15px;
+            text-align: center;
+            background: white;
+            padding: 15px;
+            box-shadow: 0 6px 12px rgba(0,0,0,0.1);
+            border-radius: 12px;
+            transition: transform 0.3s, box-shadow 0.3s;
+        }
+
+        body.dark-mode .movie-card {
+            background: #1e1e1e;
+            color: #f4f4f4;
+        }
+
+        .movie-card:hover {
+            transform: scale(1.05);
+            box-shadow: 0 10px 18px rgba(0,0,0,0.15);
+        }
+
+        img {
+            max-width: 100%;
+            border-radius: 8px;
+            height: 300px;
+            object-fit: cover;
+        }
+
+        h2 {
+            font-size: 16px;
+            margin-top: 10px;
+        }
+
+        a {
+            display: inline-block;
+            margin-top: 10px;
+            padding: 8px 12px;
+            background: rgb(0, 0, 0);
+            color: white;
+            text-decoration: none;
+            border-radius: 20px;
+            transition: background 0.3s;
+        }
+
+        a:hover {
+            background: rgb(120, 134, 149);
+        }
+
+        p {
+            text-align: center;
+            font-size: 18px;
+            color: #555;
+        }
+
+        #loader {
+            display: none;
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            border: 8px solid #f3f3f3;
+            border-top: 8px solid rgb(0, 0, 0);
+            border-radius: 50%;
+            width: 60px;
+            height: 60px;
+            animation: spin 1s linear infinite;
+            z-index: 9999;
+        }
+
+        @keyframes spin {
+            0% { transform: translate(-50%, -50%) rotate(0deg); }
+            100% { transform: translate(-50%, -50%) rotate(360deg); }
+        }
+
+        #rating-filter-container,
+        #release-date-filter-container {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            text-align: center;
+            margin-top: 20px;
+            display: none; /* Hidden by default */
+        }
+    </style>
+</head>
+<body>
+    <div id="loader"></div>
+    <h1>🎬 Movie Finder</h1>
+    <button class="theme-toggle" onclick="toggleTheme()">Toggle Theme</button>
+
+    <form id="search-form">
+        <input type="text" id="query" placeholder="Search for a movie...">
+        <button type="submit">Search</button>
+    </form>
+
+    <!-- Rating and Release Date Filter side-by-side (hidden until search) -->
+    <div id="rating-filter-container">
+        <select id="rating-filter">
+            <option value="">All Ratings</option>
+            <option value="1">1 Star</option>
+            <option value="2">2 Stars</option>
+            <option value="3">3 Stars</option>
+            <option value="4">4 Stars</option>
+            <option value="5">5 Stars</option>
+            <option value="5+">5+ Stars</option>
+        </select>
+
+        <select id="release-date-filter">
+            <option value="">All Years</option>
+            <!-- Dynamically populate years from 2025 to current year -->
+        </select>
+    </div>
+
+    <div class="movie-list" id="movie-list"></div>
+
+    <script>
+        const API_KEY = 'b8d2d49b'; // Replace with your OMDb API Key
+        const form = document.getElementById('search-form');
+        const queryInput = document.getElementById('query');
+        const ratingFilter = document.getElementById('rating-filter');
+        const ratingFilterContainer = document.getElementById('rating-filter-container');
+        const releaseDateFilter = document.getElementById('release-date-filter');
+        const movieList = document.getElementById('movie-list');
+        const loader = document.getElementById('loader');
+
+        let allYears = [];
+
+        async function fetchMovies() {
+            loader.style.display = 'block';
+            movieList.innerHTML = "";
+
+            const query = queryInput.value;
+            const selectedRating = ratingFilter.value;
+            const selectedReleaseDate = releaseDateFilter.value;
+
+            if (!query) {
+                loader.style.display = 'none';
+                return;
+            }
+
+            const searchURL = `https://www.omdbapi.com/?apikey=${API_KEY}&s=${query}`;
+            const searchResponse = await fetch(searchURL);
+            const searchData = await searchResponse.json();
+
+            if (searchData.Search) {
+                // Show filters after search
+                ratingFilterContainer.style.display = 'flex'; // Show filters side-by-side
+
+                let years = new Set();
+                for (const movie of searchData.Search) {
+                    const detailURL = `https://www.omdbapi.com/?apikey=${API_KEY}&i=${movie.imdbID}`;
+                    const detailResponse = await fetch(detailURL);
+                    const detailData = await detailResponse.json();
+
+                    const year = detailData.Year;
+                    if (year) years.add(year);
+
+                    const rating = parseFloat(detailData.imdbRating || "0");
+
+                    // Filtering based on rating and release date
+                    if (
+                        (!selectedRating || 
+                            (rating >= 1 && rating <= 5 && Math.floor(rating) === parseInt(selectedRating)) || 
+                            (selectedRating === '5+' && rating > 5)) &&
+                        (!selectedReleaseDate || selectedReleaseDate === year)
+                    ) {
+                        movieList.innerHTML += `  
+                            <div class="movie-card">
+                                <img src="${detailData.Poster !== "N/A" ? detailData.Poster : "/static/no-image.jpg"}" alt="${detailData.Title}">
+                                <h2>${detailData.Title}</h2>
+                                <a href="/movie/${detailData.imdbID}/">View Details</a>
+                            </div>
+                        `;
+                    }
+                }
+
+                // Populate the release year filter dynamically from 2025 to current year
+                const currentYear = new Date().getFullYear();
+                allYears = [];
+                for (let year = currentYear; year >= 1950; year--) {
+                    allYears.push(year);
+                }
+
+                // Set years to the dropdown
+                releaseDateFilter.innerHTML = '<option value="">All Years</option>';
+                for (const year of allYears) {
+                    const option = document.createElement('option');
+                    option.value = year;
+                    option.textContent = year;
+                    releaseDateFilter.appendChild(option);
+                }
+
+                // Make sure the selected year remains in the dropdown
+                if (selectedReleaseDate) {
+                    releaseDateFilter.value = selectedReleaseDate;
+                }
+            } else {
+                movieList.innerHTML = `<p>No movies found.</p>`;
+            }
+
+            loader.style.display = 'none';
+        }
+
+        form.addEventListener('submit', (e) => {
+            e.preventDefault();
+            fetchMovies();
+        });
+
+        ratingFilter.addEventListener('change', () => {
+            fetchMovies();
+        });
+
+        releaseDateFilter.addEventListener('change', () => {
+            fetchMovies();
+        });
+
+        function toggleTheme() {
+            document.body.classList.toggle('dark-mode');
+            localStorage.setItem('theme', document.body.classList.contains('dark-mode') ? 'dark' : 'light');
+        }
+
+        window.onload = () => {
+            if (localStorage.getItem('theme') === 'dark') {
+                document.body.classList.add('dark-mode');
+            }
+        };
+    </script>
+</body>
+</html>
